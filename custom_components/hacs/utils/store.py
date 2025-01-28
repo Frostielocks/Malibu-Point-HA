@@ -1,13 +1,14 @@
 """Storage handers."""
+
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 from homeassistant.util import json as json_util
 
 from ..const import VERSION_STORAGE
 from ..exceptions import HacsException
-from .logger import get_hacs_logger
+from .logger import LOGGER
 
-_LOGGER = get_hacs_logger()
+_LOGGER = LOGGER
 
 
 class HACSStore(Store):
@@ -17,7 +18,9 @@ class HACSStore(Store):
         """Load the data from disk if version matches."""
         try:
             data = json_util.load_json(self.path)
-        except BaseException as exception:  # lgtm [py/catch-base-exception] pylint: disable=broad-except
+        except (
+            BaseException  # lgtm [py/catch-base-exception] pylint: disable=broad-except
+        ) as exception:
             _LOGGER.critical(
                 "Could not load '%s', restore it from a backup or delete the file: %s",
                 self.path,
@@ -36,7 +39,7 @@ def get_store_key(key):
 
 def _get_store_for_key(hass, key, encoder):
     """Create a Store object for the key."""
-    return HACSStore(hass, VERSION_STORAGE, get_store_key(key), encoder=encoder)
+    return HACSStore(hass, VERSION_STORAGE, get_store_key(key), encoder=encoder, atomic_writes=True)
 
 
 def get_store_for_key(hass, key):
@@ -47,16 +50,6 @@ def get_store_for_key(hass, key):
 async def async_load_from_store(hass, key):
     """Load the retained data from store and return de-serialized data."""
     return await get_store_for_key(hass, key).async_load() or {}
-
-
-async def async_save_to_store_default_encoder(hass, key, data):
-    """Generate store json safe data to the filesystem.
-
-    The data is expected to be encodable with the default
-    python json encoder. It should have already been passed through
-    JSONEncoder if needed.
-    """
-    await _get_store_for_key(hass, key, None).async_save(data)
 
 
 async def async_save_to_store(hass, key, data):

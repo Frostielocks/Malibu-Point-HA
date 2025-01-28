@@ -1,9 +1,10 @@
 """Class for python_scripts in HACS."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..enums import HacsCategory
+from ..enums import HacsCategory, HacsDispatchEvent
 from ..exceptions import HacsException
 from ..utils.decorator import concurrent
 from .base import HacsRepository
@@ -38,7 +39,7 @@ class HacsPythonScriptRepository(HacsRepository):
         await self.common_validate()
 
         # Custom step 1: Validate content.
-        if self.data.content_in_root:
+        if self.repository_manifest.content_in_root:
             self.content.path.remote = ""
 
         compliant = False
@@ -48,7 +49,7 @@ class HacsPythonScriptRepository(HacsRepository):
                 break
         if not compliant:
             raise HacsException(
-                f"Repository structure for {self.ref.replace('tags/','')} is not compliant"
+                f"{self.string} Repository structure for {self.ref.replace('tags/','')} is not compliant"
             )
 
         # Handle potential errors
@@ -63,6 +64,9 @@ class HacsPythonScriptRepository(HacsRepository):
         # Set name
         self.update_filenames()
 
+        if self.hacs.system.action:
+            await self.hacs.validation.async_run_repository_checks(self)
+
     @concurrent(concurrenttasks=10, backoff_time=5)
     async def update_repository(self, ignore_issues=False, force=False):
         """Update."""
@@ -70,7 +74,7 @@ class HacsPythonScriptRepository(HacsRepository):
             return
 
         # Get python_script objects.
-        if self.data.content_in_root:
+        if self.repository_manifest.content_in_root:
             self.content.path.remote = ""
 
         compliant = False
@@ -80,16 +84,16 @@ class HacsPythonScriptRepository(HacsRepository):
                 break
         if not compliant:
             raise HacsException(
-                f"Repository structure for {self.ref.replace('tags/','')} is not compliant"
+                f"{self.string} Repository structure for {self.ref.replace('tags/','')} is not compliant"
             )
 
         # Update name
         self.update_filenames()
 
-        # Signal entities to refresh
+        # Signal frontend to refresh
         if self.data.installed:
-            self.hacs.hass.bus.async_fire(
-                "hacs/repository",
+            self.hacs.async_dispatch(
+                HacsDispatchEvent.REPOSITORY,
                 {
                     "id": 1337,
                     "action": "update",

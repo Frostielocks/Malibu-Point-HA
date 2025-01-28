@@ -1,9 +1,11 @@
 """HACS Decorators."""
+
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Coroutine
+from typing import TYPE_CHECKING, Any
 
 from ..const import DEFAULT_CONCURRENT_BACKOFF_TIME, DEFAULT_CONCURRENT_TASKS
 
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
 
 def concurrent(
     concurrenttasks: int = DEFAULT_CONCURRENT_TASKS,
-    backoff_time=DEFAULT_CONCURRENT_BACKOFF_TIME,
+    backoff_time: int = DEFAULT_CONCURRENT_BACKOFF_TIME,
 ) -> Coroutine[Any, Any, None]:
     """Return a modified function."""
 

@@ -1,4 +1,5 @@
 """Backup."""
+
 from __future__ import annotations
 
 import os
@@ -27,7 +28,7 @@ class Backup:
         backup_path: str = DEFAULT_BACKUP_PATH,
         repository: HacsRepository | None = None,
     ) -> None:
-        """initialize."""
+        """Initialize."""
         self.hacs = hacs
         self.repository = repository
         self.local_path = local_path or repository.content.path.local
@@ -74,7 +75,9 @@ class Backup:
                 self.local_path,
                 self.backup_path_full,
             )
-        except BaseException as exception:  # lgtm [py/catch-base-exception] pylint: disable=broad-except
+        except (
+            BaseException  # lgtm [py/catch-base-exception] pylint: disable=broad-except
+        ) as exception:
             self.hacs.log.warning("Could not create backup: %s", exception)
 
     def restore(self) -> None:
@@ -105,33 +108,3 @@ class Backup:
         while os.path.exists(self.backup_path):
             sleep(0.1)
         self.hacs.log.debug("Backup dir %s cleared", self.backup_path)
-
-
-class BackupNetDaemon(Backup):
-    """BackupNetDaemon."""
-
-    def create(self) -> None:
-        """Create a backup in /tmp"""
-        if not self._init_backup_dir():
-            return
-
-        for filename in os.listdir(self.repository.content.path.local):
-            if not filename.endswith(".yaml"):
-                continue
-
-            source_file_name = f"{self.repository.content.path.local}/{filename}"
-            target_file_name = f"{self.backup_path}/{filename}"
-            shutil.copyfile(source_file_name, target_file_name)
-
-    def restore(self) -> None:
-        """Create a backup in /tmp"""
-        if not os.path.exists(self.backup_path):
-            return
-
-        for filename in os.listdir(self.backup_path):
-            if not filename.endswith(".yaml"):
-                continue
-
-            source_file_name = f"{self.backup_path}/{filename}"
-            target_file_name = f"{self.repository.content.path.local}/{filename}"
-            shutil.copyfile(source_file_name, target_file_name)

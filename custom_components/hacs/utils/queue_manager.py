@@ -1,16 +1,17 @@
 """The QueueManager class."""
+
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 import time
-from typing import Coroutine
 
 from homeassistant.core import HomeAssistant
 
 from ..exceptions import HacsExecutionStillInProgress
-from .logger import get_hacs_logger
+from .logger import LOGGER
 
-_LOGGER = get_hacs_logger()
+_LOGGER = LOGGER
 
 
 class QueueManager:
@@ -42,7 +43,7 @@ class QueueManager:
     async def execute(self, number_of_tasks: int | None = None) -> None:
         """Execute the tasks in the queue."""
         if self.running:
-            _LOGGER.debug("<QueueManager> Execution is allreay running")
+            _LOGGER.debug("<QueueManager> Execution is already running")
             raise HacsExecutionStillInProgress
         if len(self.queue) == 0:
             _LOGGER.debug("<QueueManager> The queue is empty")
@@ -60,13 +61,16 @@ class QueueManager:
             for task in self.queue:
                 local_queue.append(task)
 
-        for task in local_queue:
-            self.queue.remove(task)
-
         _LOGGER.debug("<QueueManager> Starting queue execution for %s tasks", len(local_queue))
         start = time.time()
-        await asyncio.gather(*local_queue)
+        result = await asyncio.gather(*local_queue, return_exceptions=True)
+        for entry in result:
+            if isinstance(entry, Exception):
+                _LOGGER.error("<QueueManager> %s", entry)
         end = time.time() - start
+
+        for task in local_queue:
+            self.queue.remove(task)
 
         _LOGGER.debug(
             "<QueueManager> Queue execution finished for %s tasks finished in %.2f seconds",

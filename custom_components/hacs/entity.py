@@ -1,35 +1,35 @@
 """HACS Base entities."""
+
 from __future__ import annotations
 
-from homeassistant.core import Event, callback
+from typing import TYPE_CHECKING, Any
+
+from homeassistant.core import callback
+from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.update_coordinator import BaseCoordinatorEntity
 
-from custom_components.hacs.enums import HacsGitHubRepo
-
-from .base import HacsBase
 from .const import DOMAIN, HACS_SYSTEM_ID, NAME_SHORT
-from .repositories.base import HacsRepository
+from .coordinator import HacsUpdateCoordinator
+from .enums import HacsDispatchEvent, HacsGitHubRepo
+
+if TYPE_CHECKING:
+    from .base import HacsBase
+    from .repositories.base import HacsRepository
 
 
 def system_info(hacs: HacsBase) -> dict:
     """Return system info."""
-    info = {
+    return {
         "identifiers": {(DOMAIN, HACS_SYSTEM_ID)},
         "name": NAME_SHORT,
         "manufacturer": "hacs.xyz",
         "model": "",
         "sw_version": str(hacs.version),
         "configuration_url": "homeassistant://hacs",
+        "entry_type": DeviceEntryType.SERVICE,
     }
-    # LEGACY can be removed when min HA version is 2021.12
-    if hacs.core.ha_version >= "2021.12.0b0":
-        # pylint: disable=import-outside-toplevel
-        from homeassistant.helpers.device_registry import DeviceEntryType
-
-        info["entry_type"] = DeviceEntryType.SERVICE
-    else:
-        info["entry_type"] = "service"
-    return info
 
 
 class HacsBaseEntity(Entity):
@@ -42,13 +42,17 @@ class HacsBaseEntity(Entity):
         """Initialize."""
         self.hacs = hacs
 
+
+class HacsDispatcherEntity(HacsBaseEntity):
+    """Base HACS entity listening to dispatcher signals."""
+
     async def async_added_to_hass(self) -> None:
         """Register for status events."""
         self.async_on_remove(
-            self.hass.bus.async_listen(
-                event_type="hacs/repository",
-                event_filter=self._filter_events,
-                listener=self._update_and_write_state,
+            async_dispatcher_connect(
+                self.hass,
+                HacsDispatchEvent.REPOSITORY,
+                self._update_and_write_state,
             )
         )
 
@@ -61,21 +65,13 @@ class HacsBaseEntity(Entity):
         self._update()
 
     @callback
-    def _filter_events(self, event: Event) -> bool:
-        """Filter the events."""
-        if self.repository is None:
-            # System entities
-            return True
-        return event.data.get("repository_id") == self.repository.data.id
-
-    @callback
-    def _update_and_write_state(self, *_) -> None:
+    def _update_and_write_state(self, _: Any) -> None:
         """Update the entity and write state."""
         self._update()
         self.async_write_ha_state()
 
 
-class HacsSystemEntity(HacsBaseEntity):
+class HacsSystemEntity(HacsDispatcherEntity):
     """Base system entity."""
 
     _attr_icon = "hacs:hacs"
@@ -87,17 +83,24 @@ class HacsSystemEntity(HacsBaseEntity):
         return system_info(self.hacs)
 
 
-class HacsRepositoryEntity(HacsBaseEntity):
+class HacsRepositoryEntity(BaseCoordinatorEntity[HacsUpdateCoordinator], HacsBaseEntity):
     """Base repository entity."""
 
-    def __init__(self, hacs: HacsBase, repository: HacsRepository) -> None:
+    def __init__(
+        self,
+        hacs: HacsBase,
+        repository: HacsRepository,
+    ) -> None:
         """Initialize."""
-        super().__init__(hacs=hacs)
+        BaseCoordinatorEntity.__init__(self, hacs.coordinators[repository.data.category])
+        HacsBaseEntity.__init__(self, hacs=hacs)
         self.repository = repository
         self._attr_unique_id = str(repository.data.id)
+        self._repo_last_fetched = repository.data.last_fetched
 
     @property
     def available(self) -> bool:
+        """Return True if entity is available."""
         return self.hacs.repositories.is_downloaded(repository_id=str(self.repository.data.id))
 
     @property
@@ -106,21 +109,35 @@ class HacsRepositoryEntity(HacsBaseEntity):
         if self.repository.data.full_name == HacsGitHubRepo.INTEGRATION:
             return system_info(self.hacs)
 
-        info = {
+        def _manufacturer():
+            if authors := self.repository.data.authors:
+                return ", ".join(author.replace("@", "") for author in authors)
+            return self.repository.data.full_name.split("/")[0]
+
+        return {
             "identifiers": {(DOMAIN, str(self.repository.data.id))},
             "name": self.repository.display_name,
             "model": self.repository.data.category,
-            "manufacturer": ", ".join(
-                author.replace("@", "") for author in self.repository.data.authors
-            ),
-            "configuration_url": "homeassistant://hacs",
+            "manufacturer": _manufacturer(),
+            "configuration_url": f"homeassistant://hacs/repository/{self.repository.data.id}",
+            "entry_type": DeviceEntryType.SERVICE,
         }
-        # LEGACY can be removed when min HA version is 2021.12
-        if self.hacs.core.ha_version >= "2021.12.0b0":
-            # pylint: disable=import-outside-toplevel
-            from homeassistant.helpers.device_registry import DeviceEntryType
 
-            info["entry_type"] = DeviceEntryType.SERVICE
-        else:
-            info["entry_type"] = "service"
-        return info
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        if (
+            self._repo_last_fetched is not None
+            and self.repository.data.last_fetched is not None
+            and self._repo_last_fetched >= self.repository.data.last_fetched
+        ):
+            return
+
+        self._repo_last_fetched = self.repository.data.last_fetched
+        self.async_write_ha_state()
+
+    async def async_update(self) -> None:
+        """Update the entity.
+
+        Only used by the generic entity update service.
+        """

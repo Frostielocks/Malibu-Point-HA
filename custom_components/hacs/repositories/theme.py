@@ -1,9 +1,12 @@
 """Class for themes in HACS."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..enums import HacsCategory
+from homeassistant.exceptions import HomeAssistantError
+
+from ..enums import HacsCategory, HacsDispatchEvent
 from ..exceptions import HacsException
 from ..utils.decorator import concurrent
 from .base import HacsRepository
@@ -32,10 +35,7 @@ class HacsThemeRepository(HacsRepository):
 
     async def async_post_installation(self):
         """Run post installation steps."""
-        try:
-            await self.hacs.hass.services.async_call("frontend", "reload_themes", {})
-        except BaseException:  # lgtm [py/catch-base-exception] pylint: disable=broad-except
-            pass
+        await self._reload_frontend_themes()
 
     async def validate_repository(self):
         """Validate."""
@@ -50,10 +50,10 @@ class HacsThemeRepository(HacsRepository):
                 break
         if not compliant:
             raise HacsException(
-                f"Repository structure for {self.ref.replace('tags/','')} is not compliant"
+                f"{self.string} Repository structure for {self.ref.replace('tags/','')} is not compliant"
             )
 
-        if self.data.content_in_root:
+        if self.repository_manifest.content_in_root:
             self.content.path.remote = ""
 
         # Handle potential errors
@@ -69,6 +69,21 @@ class HacsThemeRepository(HacsRepository):
         self.update_filenames()
         self.content.path.local = self.localpath
 
+        if self.hacs.system.action:
+            await self.hacs.validation.async_run_repository_checks(self)
+
+    async def _reload_frontend_themes(self) -> None:
+        """Reload frontend themes."""
+        self.logger.debug("%s Reloading frontend themes", self.string)
+        try:
+            await self.hacs.hass.services.async_call("frontend", "reload_themes", {})
+        except HomeAssistantError as exception:
+            self.logger.exception("%s %s", self.string, exception)
+
+    async def async_post_uninstall(self) -> None:
+        """Run post uninstall steps."""
+        await self._reload_frontend_themes()
+
     @concurrent(concurrenttasks=10, backoff_time=5)
     async def update_repository(self, ignore_issues=False, force=False):
         """Update."""
@@ -76,17 +91,17 @@ class HacsThemeRepository(HacsRepository):
             return
 
         # Get theme objects.
-        if self.data.content_in_root:
+        if self.repository_manifest.content_in_root:
             self.content.path.remote = ""
 
         # Update name
         self.update_filenames()
         self.content.path.local = self.localpath
 
-        # Signal entities to refresh
+        # Signal frontend to refresh
         if self.data.installed:
-            self.hacs.hass.bus.async_fire(
-                "hacs/repository",
+            self.hacs.async_dispatch(
+                HacsDispatchEvent.REPOSITORY,
                 {
                     "id": 1337,
                     "action": "update",

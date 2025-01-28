@@ -1,17 +1,19 @@
 """Class for integrations in HACS."""
+
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue
 from homeassistant.loader import async_get_custom_components
 
-from ..enums import HacsCategory, HacsGitHubRepo, RepositoryFile
+from ..const import DOMAIN
+from ..enums import HacsCategory, HacsDispatchEvent, HacsGitHubRepo, RepositoryFile
 from ..exceptions import AddonRepositoryException, HacsException
 from ..utils.decode import decode_content
 from ..utils.decorator import concurrent
 from ..utils.filters import get_first_directory_in_directory
-from ..utils.version import version_to_download
+from ..utils.json import json_loads
 from .base import HacsRepository
 
 if TYPE_CHECKING:
@@ -37,20 +39,41 @@ class HacsIntegrationRepository(HacsRepository):
 
     async def async_post_installation(self):
         """Run post installation steps."""
+        self.pending_restart = True
         if self.data.config_flow:
             if self.data.full_name != HacsGitHubRepo.INTEGRATION:
                 await self.reload_custom_components()
             if self.data.first_install:
                 self.pending_restart = False
-                return
-        self.pending_restart = True
+
+        if self.pending_restart:
+            self.logger.debug("%s Creating restart_required issue", self.string)
+            async_create_issue(
+                hass=self.hacs.hass,
+                domain=DOMAIN,
+                issue_id=f"restart_required_{self.data.id}_{self.ref}",
+                is_fixable=True,
+                issue_domain=self.data.domain or DOMAIN,
+                severity=IssueSeverity.WARNING,
+                translation_key="restart_required",
+                translation_placeholders={
+                    "name": self.display_name,
+                },
+            )
+
+    async def async_post_uninstall(self) -> None:
+        """Run post uninstall steps."""
+        if self.data.config_flow:
+            await self.reload_custom_components()
+        else:
+            self.pending_restart = True
 
     async def validate_repository(self):
         """Validate."""
         await self.common_validate()
 
         # Custom step 1: Validate content.
-        if self.data.content_in_root:
+        if self.repository_manifest.content_in_root:
             self.content.path.remote = ""
 
         if self.content.path.remote == "custom_components":
@@ -63,7 +86,8 @@ class HacsIntegrationRepository(HacsRepository):
                 ):
                     raise AddonRepositoryException()
                 raise HacsException(
-                    f"Repository structure for {self.ref.replace('tags/','')} is not compliant"
+                    f"{self.string} Repository structure for {
+                        self.ref.replace('tags/', '')} is not compliant"
                 )
             self.content.path.remote = f"custom_components/{name}"
 
@@ -71,14 +95,15 @@ class HacsIntegrationRepository(HacsRepository):
         if manifest := await self.async_get_integration_manifest():
             try:
                 self.integration_manifest = manifest
-                self.data.authors = manifest["codeowners"]
+                self.data.authors = manifest.get("codeowners", [])
                 self.data.domain = manifest["domain"]
-                self.data.manifest_name = manifest["name"]
+                self.data.manifest_name = manifest.get("name")
                 self.data.config_flow = manifest.get("config_flow", False)
 
             except KeyError as exception:
                 self.validate.errors.append(
-                    f"Missing expected key '{exception}' in { RepositoryFile.MAINIFEST_JSON}"
+                    f"Missing expected key '{exception}' in {
+                        RepositoryFile.MAINIFEST_JSON}"
                 )
                 self.hacs.log.error(
                     "Missing expected key '%s' in '%s'", exception, RepositoryFile.MAINIFEST_JSON
@@ -100,7 +125,7 @@ class HacsIntegrationRepository(HacsRepository):
         if not await self.common_update(ignore_issues, force) and not force:
             return
 
-        if self.data.content_in_root:
+        if self.repository_manifest.content_in_root:
             self.content.path.remote = ""
 
         if self.content.path.remote == "custom_components":
@@ -111,14 +136,15 @@ class HacsIntegrationRepository(HacsRepository):
         if manifest := await self.async_get_integration_manifest():
             try:
                 self.integration_manifest = manifest
-                self.data.authors = manifest["codeowners"]
+                self.data.authors = manifest.get("codeowners", [])
                 self.data.domain = manifest["domain"]
-                self.data.manifest_name = manifest["name"]
+                self.data.manifest_name = manifest.get("name")
                 self.data.config_flow = manifest.get("config_flow", False)
 
             except KeyError as exception:
                 self.validate.errors.append(
-                    f"Missing expected key '{exception}' in { RepositoryFile.MAINIFEST_JSON}"
+                    f"Missing expected key '{exception}' in {
+                        RepositoryFile.MAINIFEST_JSON}"
                 )
                 self.hacs.log.error(
                     "Missing expected key '%s' in '%s'", exception, RepositoryFile.MAINIFEST_JSON
@@ -127,10 +153,10 @@ class HacsIntegrationRepository(HacsRepository):
         # Set local path
         self.content.path.local = self.localpath
 
-        # Signal entities to refresh
+        # Signal frontend to refresh
         if self.data.installed:
-            self.hacs.hass.bus.async_fire(
-                "hacs/repository",
+            self.hacs.async_dispatch(
+                HacsDispatchEvent.REPOSITORY,
                 {
                     "id": 1337,
                     "action": "update",
@@ -150,7 +176,7 @@ class HacsIntegrationRepository(HacsRepository):
         """Get the content of the manifest.json file."""
         manifest_path = (
             "manifest.json"
-            if self.data.content_in_root
+            if self.repository_manifest.content_in_root
             else f"{self.content.path.remote}/{RepositoryFile.MAINIFEST_JSON}"
         )
 
@@ -161,7 +187,31 @@ class HacsIntegrationRepository(HacsRepository):
             method=self.hacs.githubapi.repos.contents.get,
             repository=self.data.full_name,
             path=manifest_path,
-            **{"params": {"ref": ref or version_to_download(self)}},
+            **{"params": {"ref": ref or self.version_to_download()}},
         )
         if response:
-            return json.loads(decode_content(response.data.content))
+            return json_loads(decode_content(response.data.content))
+
+    async def get_integration_manifest(self, *, version: str, **kwargs) -> dict[str, Any] | None:
+        """Get the content of the manifest.json file."""
+        manifest_path = (
+            "manifest.json"
+            if self.repository_manifest.content_in_root
+            else f"{self.content.path.remote}/{RepositoryFile.MAINIFEST_JSON}"
+        )
+
+        if manifest_path not in (x.full_path for x in self.tree):
+            raise HacsException(f"No {RepositoryFile.MAINIFEST_JSON} file found '{manifest_path}'")
+
+        self.logger.debug("%s Getting manifest.json for version=%s", self.string, version)
+        try:
+            result = await self.hacs.async_download_file(
+                f"https://raw.githubusercontent.com/{
+                    self.data.full_name}/{version}/{manifest_path}",
+                nolog=True,
+            )
+            if result is None:
+                return None
+            return json_loads(result)
+        except Exception:  # pylint: disable=broad-except
+            return None
