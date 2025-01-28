@@ -5,15 +5,6 @@ default_config:
 # Entities
 # ---
 sensor: !include_dir_merge_list includes/entities/sensor
-#alarm_control_panel: !include_dir_merge_list includes/entities/alarm_control_panel
-#camera: !include_dir_merge_list includes/entities/camera
-#media_player: !include_dir_merge_list includes/entities/media_player
-#climate: !include_dir_merge_list includes/entities/climate
-
-input_boolean: !include_dir_merge_named includes/entities/input_boolean
-input_select: !include_dir_merge_named includes/entities/input_select
-counter: !include_dir_merge_named includes/entities/counter
-
 zone: !include includes/entities/zone.yaml
 
 # ---
@@ -27,7 +18,6 @@ notify: !include_dir_merge_list includes/services/notify
 # ---
 script: !include includes/scripts.yaml
 scene: !include includes/scenes.yaml
-# automation: !include_dir_merge_list includes/automations
 automation: !include includes/automations.yaml
 
 # ---
@@ -43,7 +33,6 @@ google_assistant:
   exposed_domains:
     - switch
     - light
-  entity_config: !include_dir_merge_named includes/google_assistant
   secure_devices_pin: !secret google_secure_devices_pin
 
 # ---
@@ -59,3 +48,4 @@ http:
 
 tts:
   - platform: google_translate
+

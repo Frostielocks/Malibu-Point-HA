@@ -1,3 +1,0 @@
-- name: Test Notifier
-  platform: file
-  filename: TestNotifications

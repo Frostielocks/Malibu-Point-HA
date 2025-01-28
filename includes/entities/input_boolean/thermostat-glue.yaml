@@ -1,4 +1,0 @@
-# This is required for the wrapping thermostats for google.
-googleglue:
-  name: google-glue
-  initial: true
