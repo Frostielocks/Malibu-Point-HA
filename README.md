@@ -31,7 +31,7 @@ The Naming System is based on animal taxonomy, see [Zoo ArchiMate](https://githu
 TBD
 
 ### Configuration
-See `lovelace-ui.yaml`
+Configured in UI
 
 ### Integrations
 Configured in UI
