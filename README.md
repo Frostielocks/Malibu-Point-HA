@@ -8,7 +8,7 @@ Look down below for more information!
 ## Screenshots
 
 ### Mobile View
-![Image of Malibu Point mobile](docs/mobile.png)
+![Image of Malibu Point mobile](docs/MP-Mobile.png)
 
 ### aslan Network View
 ![Image of Malibu Point aslan](docs/MP-aslan.png)
