@@ -28,7 +28,6 @@ The Naming System is based on animal taxonomy, see [Zoo ArchiMate](https://githu
 * Reptilians: storage devices (usbs, sd-cards, etc.).
 
 ## Lovelace
-TBD
 
 ### Configuration
 Configured in UI
