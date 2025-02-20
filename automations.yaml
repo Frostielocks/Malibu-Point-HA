@@ -6,7 +6,8 @@
   actions:
   - data: {}
     target:
-      entity_id: automation.turn_on_tv
+      entity_id:
+      - automation.turn_on_tv_bufo
     action: automation.trigger
   - type: turn_on
     device_id: 09564afa5f5036ac8434885497f9ad56
@@ -35,4 +36,54 @@
     action: media_player.turn_off
     target:
       device_id: e0f4382e296225f9b3f3f1724fe964d8
+  mode: single
+- id: '1740091188870'
+  alias: Sleepy Time...
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      device_id:
+      - f452c94d32c0e74ff9cf45a8fbd96e77
+      - aab3d01b268851dc34c32c8a615d4960
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.desk_light
+      - light.reading_light
+  - action: media_player.turn_off
+    metadata: {}
+    data: {}
+    target:
+      device_id: 3718ded81c31df2e8aeb964cbd7203df
+  mode: single
+- id: '1740091718203'
+  alias: Arriving Home at Night
+  description: ''
+  triggers:
+  - trigger: zone
+    entity_id: person.roos
+    zone: zone.home
+    event: enter
+  conditions:
+  - condition: not
+    conditions:
+    - condition: zone
+      entity_id: person.seppe
+      zone: zone.home
+  - condition: sun
+    after: sunset
+  actions:
+  - action: automation.trigger
+    metadata: {}
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.wake_up
   mode: single
