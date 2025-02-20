@@ -1,0 +1,38 @@
+- id: '1740089652319'
+  alias: Wake Up!
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - data: {}
+    target:
+      entity_id: automation.turn_on_tv
+    action: automation.trigger
+  - type: turn_on
+    device_id: 09564afa5f5036ac8434885497f9ad56
+    entity_id: c1f7d6f098ce6281b32b8f7e8db72789
+    domain: light
+  - type: turn_on
+    device_id: d32241669db03c603baa5a527aac6c23
+    entity_id: light.reading_light
+    domain: light
+  - type: turn_on
+    device_id: 0cd71aab4097cbba429d8e6ce3669c05
+    entity_id: switch.mood_wire_light
+    domain: switch
+  mode: single
+- id: '1740090856944'
+  alias: Turn on TV
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - data: {}
+    action: media_player.turn_on
+    target:
+      device_id: e0f4382e296225f9b3f3f1724fe964d8
+  - data: {}
+    action: media_player.turn_off
+    target:
+      device_id: e0f4382e296225f9b3f3f1724fe964d8
+  mode: single

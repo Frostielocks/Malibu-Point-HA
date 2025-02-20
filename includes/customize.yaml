@@ -1,2 +1,4 @@
 device_tracker.spaceship:
   entity_picture: /local/personal/spaceship.jpg
+device_tracker.cupra_tracker:
+  entity_picture: /local/personal/wasp5.png

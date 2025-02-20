@@ -123,21 +123,21 @@
       - 3718ded81c31df2e8aeb964cbd7203df
     action: media_player.turn_off
   mode: single
-- id: '1656873091631'
-  alias: Turn on TV
-  description: ''
-  trigger: []
-  condition: []
-  action:
-  - service: media_player.turn_on
-    data: {}
-    target:
-      device_id: 3db373f99e23c1e16e78d23257583e1f
-  - service: media_player.turn_off
-    data: {}
-    target:
-      device_id: 3db373f99e23c1e16e78d23257583e1f
-  mode: single
+#- id: '1656873091631'
+#  alias: Turn on TV
+#  description: ''
+#  trigger: []
+#  condition: []
+#  action:
+#  - service: media_player.turn_on
+#    data: {}
+#    target:
+#      device_id: 3db373f99e23c1e16e78d23257583e1f
+#  - service: media_player.turn_off
+#    data: {}
+#    target:
+#      device_id: 3db373f99e23c1e16e78d23257583e1f
+#  mode: single
 - id: '1659384053123'
   alias: Laundromat still on
   description: ''

@@ -21,7 +21,8 @@ notify: !include_dir_merge_list includes/services/notify
 # ---
 script: !include includes/scripts.yaml
 scene: !include includes/scenes.yaml
-automation: !include includes/automations.yaml
+automation manual: !include includes/automations.yaml
+automation ui: !include automations.yaml
 
 # ---
 # Interfaces
