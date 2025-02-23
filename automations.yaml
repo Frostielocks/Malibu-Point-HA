@@ -50,6 +50,7 @@
       device_id:
       - f452c94d32c0e74ff9cf45a8fbd96e77
       - aab3d01b268851dc34c32c8a615d4960
+      - 0cd71aab4097cbba429d8e6ce3669c05
   - action: light.turn_off
     metadata: {}
     data: {}
@@ -61,7 +62,9 @@
     metadata: {}
     data: {}
     target:
-      device_id: 3718ded81c31df2e8aeb964cbd7203df
+      device_id:
+      - e0f4382e296225f9b3f3f1724fe964d8
+      - 3718ded81c31df2e8aeb964cbd7203df
   mode: single
 - id: '1740091718203'
   alias: Arriving Home at Night
