@@ -1,0 +1,383 @@
+custom_header:
+  compact_mode: true
+background: var(--background-image)
+views:
+  - title: At a Glance
+    theme: ''
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: weather.malibu_point
+        color: ''
+        state_content: temperature
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        color: ''
+        entity: sensor.precipitation_forecast_average
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        color: ''
+        entity: weather.buienradar
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.sun_next_setting
+        color: ''
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.docker_hub_update_available
+        color: ''
+        name: core
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: update.hacs_update
+        color: ''
+        show_entity_picture: false
+        name: HACS
+    cards:
+      - type: vertical-stack
+        cards:
+          - show_name: false
+            show_icon: true
+            show_state: true
+            type: glance
+            entities:
+              - entity: person.roos
+              - entity: sensor.fratercula_battery_level
+              - entity: person.seppe
+              - entity: sensor.nothing_battery_level
+            state_color: true
+          - type: custom:mini-graph-card
+            entities:
+              - sensor.load_15m
+          - type: entities
+            entities:
+              - entity: binary_sensor.rpi_power_status
+              - entity: sensor.last_boot
+              - entity: sensor.uptime
+          - type: custom:mushroom-light-card
+            entity: light.reading_light
+            use_light_color: true
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            fill_container: false
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+          - type: custom:mushroom-light-card
+            entity: light.desk_light
+            use_light_color: true
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            hold_action:
+              action: more-info
+            tap_action:
+              action: toggle
+          - type: entities
+            entities:
+              - entity: switch.mood_wire_light
+              - entity: switch.kitchen_light
+              - entity: switch.christmas_tree
+          - type: custom:mini-media-player
+            artwork: cover
+            entity: media_player.acris
+            info: short
+          - type: custom:mini-media-player
+            entity: media_player.bufo
+            artwork: cover
+            info: short
+          - type: custom:mini-media-player
+            entity: media_player.liua
+            artwork: material
+            info: short
+            toggle_power: false
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: media_player.lg_smart_tv_jellyfin
+                state_not: idle
+              - condition: state
+                entity: media_player.lg_smart_tv_jellyfin
+                state_not: 'off'
+              - condition: state
+                entity: media_player.lg_smart_tv_jellyfin
+                state_not: unavailable
+            card:
+              type: custom:mini-media-player
+              entity: media_player.lg_smart_tv_jellyfin
+              artwork: material
+              info: short
+              toggle_power: true
+              hide:
+                power: true
+                play_pause: true
+                mute: true
+                volume: true
+          - type: entities
+            entities:
+              - entity: switch.laundromat
+              - entity: sensor.litoria_brother_status
+            show_header_toggle: false
+          - type: horizontal-stack
+            cards:
+              - show_name: false
+                show_icon: true
+                type: button
+                tap_action:
+                  action: perform-action
+                  perform_action: automation.trigger
+                  target:
+                    entity_id: automation.wake_up
+                  data:
+                    skip_condition: true
+                entity: automation.wake_up
+                hold_action:
+                  action: more-info
+                icon: mdi:weather-sunset
+                show_state: false
+              - show_name: false
+                show_icon: true
+                type: button
+                tap_action:
+                  action: perform-action
+                  perform_action: automation.trigger
+                  target:
+                    entity_id: automation.sleepy_time_2
+                  data:
+                    skip_condition: true
+                entity: automation.sleepy_time_2
+                hold_action:
+                  action: more-info
+                icon: mdi:sleep
+              - show_name: false
+                show_icon: true
+                type: button
+                tap_action:
+                  action: perform-action
+                  perform_action: automation.trigger
+                  target:
+                    entity_id: automation.turn_on_tv_bufo
+                  data:
+                    skip_condition: true
+                entity: automation.turn_on_tv_bufo
+                hold_action:
+                  action: more-info
+                icon: mdi:youtube-tv
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.memory_use_percent
+                min: 0
+                max: 100
+                severity:
+                  green: 0
+                  yellow: 50
+                  red: 75
+              - type: gauge
+                entity: sensor.ailurus_ram_used_percent
+                min: 0
+                max: 100
+                severity:
+                  green: 0
+                  yellow: 50
+                  red: 75
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.panthera_memory_usage
+                min: 0
+                max: 100
+                severity:
+                  green: 0
+                  yellow: 50
+                  red: 75
+              - type: gauge
+                entity: sensor.panthera_containers_active
+                min: 0
+                max: 12
+                severity:
+                  green: 12
+                  yellow: 9
+                  red: 3
+          - type: custom:mini-graph-card
+            entities:
+              - sensor.carcharadon_asus_devices_connected
+          - type: entities
+            entities:
+              - entity: switch.pi_hole
+              - entity: sensor.speedtest_ping
+              - entity: sensor.speedtest_download
+              - entity: sensor.speedtest_upload
+    type: masonry
+    icon: ''
+    path: at a glance
+  - type: masonry
+    title: Travel
+    path: travel
+    sections: []
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: heading
+            icon: mdi:rocket
+            heading_style: title
+            heading: Spaceship
+          - type: entities
+            entities:
+              - entity: sensor.spaceship_remaining_fuel_percent
+                name: Fuel
+              - entity: sensor.spaceship_mileage
+                name: Mileage
+            show_header_toggle: false
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-lock-card
+                entity: lock.spaceship_lock
+                fill_container: false
+          - type: horizontal-stack
+            cards:
+              - type: vertical-stack
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: sensor.spaceship_climate_status
+                    name: Climate
+                    icon_color: deep-orange
+                  - type: custom:mushroom-entity-card
+                    entity: switch.spaceship_climate
+                    secondary_info: none
+                    tap_action:
+                      action: toggle
+                    fill_container: false
+                    primary_info: none
+              - type: vertical-stack
+                cards:
+                  - type: entities
+                    entities:
+                      - entity: button.spaceship_flash_lights
+                        name: Lights
+                      - entity: button.spaceship_sound_horn
+                        name: Horn
+          - type: heading
+            icon: mdi:flash
+            heading_style: title
+            heading: Vespula
+          - type: entities
+            entities:
+              - entity: sensor.cupra_state_of_charge
+                name: Charge
+              - entity: sensor.cupra_odometer_in_kilometers
+                name: Mileage
+            show_header_toggle: false
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: sensor.cupra_charge_power
+                icon_color: amber
+              - type: vertical-stack
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: binary_sensor.cupra_door_lock_status
+                    fill_container: false
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-number-card
+                entity: number.cupra_target_state_of_charge
+                icon_color: amber
+          - type: entities
+            entities:
+              - entity: button.cupra_start_climate
+                name: Start Climate
+              - entity: button.cupra_stop_climate
+                name: Stop Climate
+          - type: custom:mushroom-number-card
+            entity: number.cupra_target_climate_temperature
+            icon_color: red
+          - type: heading
+            icon: mdi:train
+            heading: Trains
+            heading_style: title
+          - type: entities
+            entities:
+              - entity: sensor.trains_in_mechelen
+              - entity: >-
+                  sensor.train_from_mechelen_to_brussel_centraal_bruxelles_central
+                name: Brussel Travel Time
+              - type: attribute
+                entity: >-
+                  sensor.train_from_mechelen_to_brussel_centraal_bruxelles_central
+                attribute: departure
+                name: Brussel Next Departure
+              - entity: sensor.train_from_mechelen_to_antwerpen_centraal
+                name: Antwerpen Travel Time
+              - type: attribute
+                entity: sensor.train_from_mechelen_to_antwerpen_centraal
+                attribute: departure
+                name: Antwerpen Next Departure
+            show_header_toggle: false
+            title: Mechelen
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                entities:
+                  - entity: sensor.train_from_antwerpen_centraal_to_mechelen
+                    name: Travel
+                  - type: attribute
+                    entity: sensor.train_from_antwerpen_centraal_to_mechelen
+                    attribute: departure
+                    name: Next
+                title: Antwerpen
+              - type: entities
+                entities:
+                  - entity: >-
+                      sensor.train_from_brussel_centraal_bruxelles_central_to_mechelen
+                    name: Travel
+                  - type: attribute
+                    entity: >-
+                      sensor.train_from_brussel_centraal_bruxelles_central_to_mechelen
+                    attribute: departure
+                    name: Next
+                title: Brussel
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: person.roos
+        color: ''
+        show_entity_picture: true
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: device_tracker.spaceship
+        color: ''
+        show_entity_picture: true
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: person.seppe
+        color: ''
+        show_entity_picture: true
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: device_tracker.cupra_tracker
+        color: ''
+        show_entity_picture: true
+title: Malibu Point
