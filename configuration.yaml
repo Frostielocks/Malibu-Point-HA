@@ -49,6 +49,7 @@ http:
   trusted_proxies:
     - 127.0.0.1
     - ::1
+    - 192.168.0.31 #panthera
 
 tts:
   - platform: google_translate
