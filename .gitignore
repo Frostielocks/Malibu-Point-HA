@@ -14,7 +14,7 @@ secrets.yaml
 SERVICE-ACCOUNT.json
 
 # Custom Components
-custom_components/smaug/const.py
+custom_components/
 __pycache__/
-TestNotifications
+#TestNotifications
 hacs.zip.*
